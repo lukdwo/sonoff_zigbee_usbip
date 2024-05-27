@@ -1,15 +1,19 @@
 #!/bin/bash
 
-FILE=`ls -la  /dev/ttyUSB0 | cut -d " " -f 10`
-echo $FILE
+FILE="/dev/ttyUSB0"
 DATA=`date +%Y-%m-%d_%H:%M:%S`
-if [[ ! "$FILE" = "/dev/ttyUSB0" ]]; then
-modprobe vhci-hcd
-ssh user@192.168.100.101 -p 2222 'usbip unbind -b 3-1' 2>/dev/null
-ssh user@192.168.100.101 -p 2222 'usbip bind -b 3-1'
-usbip attach -r 192.168.100.101 -b 3-1
-echo "Podlaczono usbip: "$DATA >> usbip.log
+if [[ ! -e "$FILE" ]]; then
+#modprobe vhci-hcd
+ssh root@192.168.100.254 -p 2222 'usbipd -D && sleep 2 && usbip unbind -b 1-2' 2>/dev/null
+ssh root@192.168.100.254 -p 2222 'usbip bind -b 1-2'
+sudo /usr/sbin/usbip attach -r 192.168.100.254 -b 1-2
+echo "Podlaczono usbip: "$DATA
 sleep 5
-docker start zigbee2mqtt
 fi
+sudo chown luk:luk /home/docker/zigbee2mqtt/ttyUSB0
+sudo -u luk docker start zigbee2mqtt
+sudo -u luk docker exec -it homeassistant sh -c "cp -R /config/.ssh/ /root/ && chmod 700 /root/.ssh && chmod 600 /root/.ssh/*"
+echo "Ostatnie wywolanie":
+date
 exit 0
+
